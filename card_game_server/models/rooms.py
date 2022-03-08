@@ -146,6 +146,17 @@ class Rooms:
         room.leave(player)
         return room
 
+    def create(self, room_name: str = None) -> Room:
+        """
+        Creates a new room.
+        """
+        room = Room(
+            capacity=self._capacity,
+            name=room_name,
+        )
+        self._rooms.append(room)
+        return room
+
     def clear_empty_rooms(self) -> None:
         """
         Remove all empty rooms.

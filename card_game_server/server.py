@@ -2,9 +2,11 @@ import json
 import socket
 from threading import Thread, Lock
 from time import time
-from typing import Union
+from typing import Tuple, Union
 
 from card_game_server.exceptions import (
+    PlayerNotInRoomError,
+    RoomFullError,
     RoomNotFoundError,
     UdpServerFailedToSendError,
 )
@@ -117,14 +119,88 @@ class TcpServer(Thread):
 
     def handle(
         self,
-        conn: socket.socket,
-        address,
+        sock: socket.socket,
+        address: Tuple[str, int],
         message: Message,
-    ):
+    ) -> None:
         """
         Implements message handling
         """
-        # TODO.
+        # If we want to register a player, just do it and return
+        if message.action == "register":
+            client = self._rooms.register(address, int(message.payload))
+            client.send_tcp(True, client.identifier, sock)
+            return
+
+        # If we have a Player ID
+        if message.identifier is not None:
+
+            # Check if it is registered, if it's not, send a failure message
+            if not self._rooms._get_player(message.identifier):
+                log(f"Unknown Player ID {message.identifier} for {address}", "error")
+                message = self._message.copy()
+                message['success'] = False
+                message['message'] = "Unknown Player ID"
+                sock.send(json.dumps(message))
+                return
+
+            # If it is, get the player object
+            client = self._rooms._get_player(message.identifier)
+
+            # If the action asks to join a room
+            if message.action == "join":
+                # Tries to find a room and join it
+                try:
+                    if not self._rooms._get_room(message.payload):
+                        raise RoomNotFoundError()
+                    self._rooms.join(message.identifier, message.payload)
+                    client.send_tcp(True, message.payload, sock)
+                except RoomNotFoundError:
+                    client.send_tcp(False, message.payload, sock)
+                except RoomFullError:
+                    client.send_tcp(False, message.payload, sock)
+
+            # If the action asks to join ANY room
+            elif message.action == "autojoin":
+                room_id = self._rooms.join(message.identifier)
+                client.send_tcp(True, room_id, sock)
+
+            # If the action asks to list rooms
+            elif message.action == "get_rooms":
+                rooms = []
+                for room in self._rooms.rooms:
+                    rooms.append({
+                        "id": room.identifier,
+                        "name": room.name,
+                        "n_players": len(room.players),
+                        "capacity": room.capacity,
+                    })
+                client.send_tcp(True, rooms, sock)
+
+            # If the action asks to create a room
+            elif message.action == "create":
+                room_id = self._rooms.create(message.payload).identifier
+                self._rooms.join(client.identifier, room_id)
+                client.send_tcp(True, room_id, sock)
+
+            # If the action asks to leave a room
+            elif message.action == "leave":
+                try:
+                    if not self._rooms._get_room(message.room_id):
+                        raise RoomNotFoundError()
+                    self._rooms.leave(message.identifier, message.room_id)
+                    client.send_tcp(True, message.room_id, sock)
+                except RoomNotFoundError:
+                    client.send_tcp(False, message.room_id, sock)
+                except PlayerNotInRoomError:
+                    client.send_tcp(False, message.room_id, sock)
+
+            # Otherwise, user must register
+            else:
+                message = self._message.copy()
+                message['success'] = False
+                message['message'] = "You must register"
+                sock.send(json.dumps(message))
 
     def run(self):
         """
