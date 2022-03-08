@@ -46,12 +46,6 @@ class Room:
         """
         Check if the room is full.
         """
-        return len(self._players) == self._capacity
-
-    def is_full(self):
-        """
-        Check if the room is full.
-        """
         return len(self._players) >= self._capacity
 
     def is_empty(self):

@@ -1,7 +1,6 @@
 import json
 import socket
 from threading import Thread, Lock
-from time import time
 from typing import Tuple, Union
 
 from card_game_server.exceptions import (
@@ -49,8 +48,8 @@ class UdpServer(Thread):
                         message.room_id,
                         message.payload["message"]
                     )
-                except Exception as e:
-                    raise UdpServerFailedToSendError() from e
+                except Exception as exc:
+                    raise UdpServerFailedToSendError() from exc
             elif message.action == "sendto":
                 try:
                     self._rooms.sendto(
@@ -59,8 +58,8 @@ class UdpServer(Thread):
                         message.payload["recipients"],
                         message.payload["message"]
                     )
-                except Exception as e:
-                    raise UdpServerFailedToSendError() from e
+                except Exception as exc:
+                    raise UdpServerFailedToSendError() from exc
         finally:
             self._lock.release()
 
@@ -84,8 +83,7 @@ class UdpServer(Thread):
             try:
                 self.handle(message)
             except RoomNotFoundError:
-                log("Room with id {} not found".format(
-                    message.room_id), "error")
+                log(f"Room with id {message.room_id} not found", "error")
         self.stop()
 
     def stop(self):
@@ -136,7 +134,7 @@ class TcpServer(Thread):
         if message.identifier is not None:
 
             # Check if it is registered, if it's not, send a failure message
-            if not self._rooms._get_player(message.identifier):
+            if not self._rooms.get_player(message.identifier):
                 log(f"Unknown Player ID {message.identifier} for {address}", "error")
                 message = self._message.copy()
                 message['success'] = False
@@ -145,13 +143,13 @@ class TcpServer(Thread):
                 return
 
             # If it is, get the player object
-            client = self._rooms._get_player(message.identifier)
+            client = self._rooms.get_player(message.identifier)
 
             # If the action asks to join a room
             if message.action == "join":
                 # Tries to find a room and join it
                 try:
-                    if not self._rooms._get_room(message.payload):
+                    if not self._rooms.get_room(message.payload):
                         raise RoomNotFoundError()
                     self._rooms.join(message.identifier, message.payload)
                     client.send_tcp(True, message.payload, sock)
@@ -186,7 +184,7 @@ class TcpServer(Thread):
             # If the action asks to leave a room
             elif message.action == "leave":
                 try:
-                    if not self._rooms._get_room(message.room_id):
+                    if not self._rooms.get_room(message.room_id):
                         raise RoomNotFoundError()
                     self._rooms.leave(message.identifier, message.room_id)
                     client.send_tcp(True, message.room_id, sock)

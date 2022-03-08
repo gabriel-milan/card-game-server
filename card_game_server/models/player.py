@@ -33,6 +33,7 @@ class Player:
     def udp_address(self):
         return self._udp_address
 
+    # pylint: disable=no-self-use
     def send_tcp(
         self,
         success: bool,

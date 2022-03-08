@@ -48,7 +48,7 @@ class Rooms:
         """
         return self._capacity
 
-    def _get_player(self, player_id: str) -> Player:
+    def get_player(self, player_id: str) -> Player:
         """
         Get a player by its identifier.
         """
@@ -57,7 +57,7 @@ class Rooms:
                 return player
         return None
 
-    def _get_any_room(self, room_id: str = None) -> Room:
+    def get_any_room(self, room_id: str = None) -> Room:
         """
         Get a room by its identifier.
         """
@@ -76,7 +76,7 @@ class Rooms:
         self._rooms.append(room)
         return room
 
-    def _get_room(self, room_id: str = None) -> Room:
+    def get_room(self, room_id: str = None) -> Room:
         """
         Get a room by its identifier.
         """
@@ -113,17 +113,17 @@ class Rooms:
         """
         Join a room.
         """
-        player = self._get_player(player_id)
+        player = self.get_player(player_id)
         if player is None:
             raise PlayerNotFoundError()
         if room_id is not None:
-            room = self._get_room(room_id)
+            room = self.get_room(room_id)
             if room is None:
                 raise RoomNotFoundError()
-            elif room.is_full():
+            if room.is_full():
                 raise RoomFullError()
         else:
-            room = self._get_any_room(room_id)
+            room = self.get_any_room(room_id)
         room.join(player)
         return room
 
@@ -135,13 +135,13 @@ class Rooms:
         """
         Leave a room.
         """
-        player = self._get_player(player_id)
+        player = self.get_player(player_id)
         if player is None:
             raise PlayerNotFoundError()
-        room = self._get_room(room_id)
+        room = self.get_room(room_id)
         if room is None:
             raise RoomNotFoundError()
-        elif player not in room.players:
+        if player not in room.players:
             raise PlayerNotInRoomError()
         room.leave(player)
         return room
@@ -174,7 +174,7 @@ class Rooms:
         """
         Send a message to a room.
         """
-        room = self._get_room(room_id)
+        room = self.get_room(room_id)
         if room is None:
             raise RoomNotFoundError()
         self.sendto(player_id, room_id, room.players, message)
@@ -189,10 +189,10 @@ class Rooms:
         """
         Send a message to a player.
         """
-        room = self._get_room(room_id)
+        room = self.get_room(room_id)
         if room is None:
             raise RoomNotFoundError()
-        player = self._get_player(player_id)
+        player = self.get_player(player_id)
         if player is None:
             raise PlayerNotFoundError()
         if player not in room.players:
