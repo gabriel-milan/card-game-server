@@ -70,6 +70,20 @@ class Client:
 
         self.register()
 
+    @property
+    def identifier(self):
+        """
+        Returns the identifier of this client.
+        """
+        return self._identifier
+
+    @property
+    def room_id(self):
+        """
+        Returns the room id of this client.
+        """
+        return self._room_id
+
     def add_server_message(self, message: str):
         """
         Adds a server message to this object.
@@ -108,22 +122,36 @@ class Client:
         response = self.parse_data(data)
         return response
 
-    def send_udp_message(self, message: str, recipients: str = None) -> None:
+    def send_udp_message(self, message: str) -> None:
         """
         Sends an UDP message.
         """
-        if recipients:
-            message = json.dumps({
-                "action": "sendto",
-                "payload": {
-                    "recipients": recipients,
-                    "message": message,
-                },
-                "room_id": self._room_id,
-                "identifier": self._identifier,
-            })
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.sendto(message.encode(), self._server_udp)
+
+    def send_all(self, message: str):
+        """
+        Sends a message to all players in the room.
+        """
+        message = json.dumps({
+            "action": "send",
+            "payload": {"message": message},
+            "room_id": self._room_id,
+            "identifier": self._identifier,
+        })
+        self.send_udp_message(message)
+
+    def send_to(self, recipients: List[str], message: str):
+        """
+        Sends a message to a list of players.
+        """
+        message = json.dumps({
+            "action": "sendto",
+            "payload": {"message": message, "recipients": recipients},
+            "room_id": self._room_id,
+            "identifier": self._identifier,
+        })
+        self.send_udp_message(message)
 
     def create_room(self, room_name: str = None):
         """

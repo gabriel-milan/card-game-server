@@ -14,7 +14,7 @@ class Player:
         """
         Identification of a remote player.
         """
-        self._identifier: str = uuid4()
+        self._identifier: str = str(uuid4())
         self._address: str = address[0]
         self._udp_address: Tuple[str, int] = (address, int(udp_port))
 

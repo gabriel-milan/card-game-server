@@ -18,7 +18,7 @@ class Room:
         """
         A room for playing a game.
         """
-        self._identifier: str = uuid4()
+        self._identifier: str = str(uuid4())
         self._capacity: int = capacity
         self._players: List[Player] = []
         self._name: str = name if name else self._identifier
