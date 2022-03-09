@@ -43,35 +43,30 @@ def start(capacity: int = 2, tcp_port: int = 1234, udp_port: int = 1234):
             else:
                 print("Rooms :")
                 for room in rooms.rooms:
-                    print("%s - %s (%d/%d)" % (room.identifier,
-                                               room.name,
-                                               len(room.players),
-                                               room.capacity))
+                    print(
+                        f"{room.identifier} - {room.name} ({len(room.players)}/{room.capacity})")
             if len(rooms.players) == 0:
                 print("No players.")
             else:
                 print("Players :")
                 for player in rooms.players:
-                    print("%s - %s" % (player.identifier, player.address))
+                    print(f"{player.identifier} - {player.address}")
         elif cmd.startswith("room "):
             try:
-                id = cmd[5:]
-                room = rooms.get_room(id)
-                print("%s - %s (%d/%d)" % (room.identifier,
-                                           room.name,
-                                           len(room.players),
-                                           room.capacity))
+                identifier = cmd[5:]
+                room = rooms.get_room(identifier)
+                print(
+                    f"{room.identifier} - {room.name} ({len(room.players)}/{room.capacity})")
                 print("Players :")
                 for player in room.players:
                     print(player.identifier)
-            except:
+            except:  # pylint: disable=bare-except
                 print("Error while getting room informations")
         elif cmd.startswith("user "):
             try:
                 player = rooms.get_player(cmd[5:])
-                print("%s : %s:%d" % (player.identifier,
-                                      player.address))
-            except:
+                print(f"{player.identifier} : {player.address}")
+            except:  # pylint: disable=bare-except
                 print("Error while getting user informations")
         elif cmd == "quit":
             print("Shutting down  server...")

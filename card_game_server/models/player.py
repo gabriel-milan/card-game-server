@@ -15,11 +15,17 @@ class Player:
         Identification of a remote player.
         """
         self._identifier: str = str(uuid4())
-        self._address: str = address[0]
-        self._udp_address: Tuple[str, int] = (address, int(udp_port))
+        self._address: str = address
+        self._udp_address: Tuple[str, int] = (address[0], int(udp_port))
 
     def __eq__(self, other: 'Player'):
         return self._identifier == other._identifier
+
+    def __str__(self) -> str:
+        return f"<Player {self._identifier} (udp_port={self.udp_address[1]})>"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     @property
     def identifier(self):

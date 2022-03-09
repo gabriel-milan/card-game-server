@@ -13,8 +13,11 @@ The layout consists in:
 - There's also a log of the game's events in the bottom of the screen.
 """
 
+import json
 from random import randint
 from threading import Thread
+from time import sleep
+import traceback
 
 import pendulum
 from PyQt5.QtWidgets import (
@@ -30,7 +33,7 @@ from card_game_server.client import Client
 
 
 # Build the layout
-class ClientGui(QWidget):
+class ClientGui(QWidget):  # pylint: disable=too-many-instance-attributes
     """
     The main widget of the client.
     """
@@ -40,6 +43,7 @@ class ClientGui(QWidget):
         self._client: Client = None
         self.init_ui()
         Thread(target=self.connect_to_server, daemon=True).start()
+        Thread(target=self.get_messages_loop, daemon=True).start()
 
     def init_ui(self):
         """
@@ -114,7 +118,6 @@ class ClientGui(QWidget):
         """
         Connect to the server.
         """
-        from time import sleep
         self.log("Connecting to the server...")
         try:
             self._client: Client = Client(
@@ -125,8 +128,31 @@ class ClientGui(QWidget):
             )
             self.log(
                 f"Successfully connected with ID {self._client.identifier}")
-        except Exception as e:
-            self.log(f"Failed to connect: {e}")
+        except Exception as exc:  # pylint: disable=broad-except
+            self.log(f"Failed to connect: {exc}\n{traceback.format_exc()}")
+
+    def get_messages_loop(self):
+        """
+        Get messages from the server and add them to the chat.
+        """
+        while True:
+            if self._client:
+                sleep(0.05)  # TODO: maybe remove this on the future
+                try:
+                    messages = self._client.get_messages()
+                    for message in messages:
+                        # We need to decode the message.
+                        # After that, the sender is the dictionary key and the
+                        # message is the value.
+                        content = json.loads(message.decode())
+                        sender = list(content.keys())[0]
+                        message = content[sender]
+                        self.room_chat_list.addItem(
+                            f"{pendulum.now().isoformat()} ["
+                            f"{sender if sender != self._client.identifier else 'me'}]: {message}")
+                except Exception as exc:  # pylint: disable=broad-except
+                    self.log(
+                        f"Failed to get messages: {exc}\n{traceback.format_exc()}")
 
     def send_message(self):
         """
@@ -135,8 +161,6 @@ class ClientGui(QWidget):
         message = self.room_chat_text.text()
         self.log(f"Sending message: {message}")
         self._client.send_all(message)
-        self.room_chat_list.addItem(
-            f"{pendulum.now().isoformat()}: {message}")
         self.room_chat_text.setText('')
 
     def create_room(self):

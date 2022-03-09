@@ -41,7 +41,7 @@ class SocketThread(Thread):
         self._sock.close()
 
 
-class Client:
+class Client:  # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
         server_host: str,
@@ -65,10 +65,15 @@ class Client:
         self._server_listener.start()
         self._server_udp: Tuple[str, int] = (server_host, server_port_udp)
         self._server_tcp: Tuple[str, int] = (server_host, server_port_tcp)
-        self._sock_tcp: socket.socket = socket.socket(
-            socket.AF_INET, socket.SOCK_STREAM)
+        self._sock_tcp: socket.socket = None
 
         self.register()
+
+    def __str__(self) -> str:
+        return f"<Client {self._identifier} (udp_port={self._client_udp[1]})>"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     @property
     def identifier(self):
@@ -90,7 +95,7 @@ class Client:
         """
         self._server_messages.append(message)
 
-    def parse_data(data: str) -> Any:
+    def parse_data(self, data: str) -> Any:  # pylint: disable=no-self-use
         """
         Parses payload from server.
         """
@@ -98,10 +103,10 @@ class Client:
             data = json.loads(data)
             if data["success"]:
                 return data["message"]
-            else:
-                raise Exception(data["message"])
+            raise Exception(data["message"])
         except ValueError:
             log(data)
+        return None
 
     def get_messages(self) -> Set[str]:
         """
@@ -115,6 +120,8 @@ class Client:
         """
         Sends a TCP message, parses the response and returns it.
         """
+        self._sock_tcp = socket.socket(
+            socket.AF_INET, socket.SOCK_STREAM)
         self._sock_tcp.connect(self._server_tcp)
         self._sock_tcp.send(message.encode())
         data = self._sock_tcp.recv(1024)

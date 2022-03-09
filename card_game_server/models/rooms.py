@@ -10,6 +10,7 @@ from card_game_server.exceptions import (
     RoomFullError,
     RoomNotFoundError,
 )
+from card_game_server.logger import log
 from card_game_server.models.player import Player
 from card_game_server.models.room import Room
 
@@ -33,6 +34,13 @@ class Rooms:
         Get all rooms.
         """
         return self._rooms
+
+    @property
+    def room_ids(self) -> List[str]:
+        """
+        Get all room identifiers.
+        """
+        return [room.identifier for room in self._rooms]
 
     @property
     def players(self) -> List[Player]:
@@ -98,10 +106,15 @@ class Rooms:
             address,
             udp_port,
         )
-        for registered_player in self._players:
-            if player.address == registered_player.address:
-                player = registered_player
-                break
+        found = False
+        # for registered_player in self._players:
+        #     if player.address == registered_player.address:
+        #         player = registered_player
+        #         found = True
+        #         break
+
+        if not found:
+            self._players.append(player)
 
         return player
 
@@ -183,7 +196,7 @@ class Rooms:
         self,
         player_id: str,
         room_id: str,
-        recipients: Union[List[str], str],
+        recipients: Union[List[Player], Player],
         message: str,
     ):
         """
@@ -198,7 +211,10 @@ class Rooms:
         if player not in room.players:
             raise PlayerNotInRoomError()
         if isinstance(recipients, str):
-            recipients = [recipients]
+            recipients: List[Player] = [recipients]
+        recipient_ids = [recipient.identifier for recipient in recipients]
         for player in room.players:
-            if player.identifier in recipients:
+            if player.identifier in recipient_ids:
+                log(
+                    f"Sending message to {player.udp_address}", "debug")
                 player.send_udp(player_id, message)
