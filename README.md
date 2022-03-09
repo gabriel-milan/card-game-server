@@ -23,4 +23,27 @@ poetry install
 
 ### Uso
 
-- Ainda não disponível :)
+- Ative o ambiente virtual com as dependências instaladas
+
+```
+poetry shell
+```
+
+- Primeiramente, hospede o servidor fazendo
+
+```
+python run_server.py
+```
+
+- Depois, em outro(s) terminal(is), abra quantos clientes quiser com
+
+```
+python client.py
+```
+
+- O que é possível fazer:
+  - Criar (caso nenhuma exista) ou entrar em uma sala
+  - Mandar uma mensagem
+  - Sair da sala (opcional)
+
+**Obs:** existem bugs 😅
