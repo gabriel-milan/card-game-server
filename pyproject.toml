@@ -8,6 +8,7 @@ license = "GPL-3.0"
 [tool.poetry.dependencies]
 python = "^3.9"
 loguru = "^0.6.0"
+typer = "^0.4.0"
 
 [tool.poetry.dev-dependencies]
 
